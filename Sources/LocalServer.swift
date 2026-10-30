@@ -110,19 +110,25 @@ final class LocalServer {
         for name in ["content-type", "accept", "accept-language", "user-agent", "cache-control", "range"] {
             if let value = headers[name] { request.setValue(value, forHTTPHeaderField: name) }
         }
-        store.fetch(request, cacheAsset: remote && headers["range"] == nil) { [weak self] data, response, error in
+        let task = store.fetch(request, cacheAsset: remote && headers["range"] == nil) { [weak self] data, response, error in
             guard let self = self else { connection.cancel(); return }
             guard error == nil, let response = response else {
-                self.respond(connection, status: 502, headers: ["Content-Type": "text/plain; charset=utf-8"], body: Data("资源暂时无法下载，请检查网络后重试。".utf8)); return
+                self.respond(connection, status: 502, headers: ["Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store"], body: Data("资源暂时无法下载，请检查网络后重试。".utf8)); return
             }
             var output = ["Content-Type": response.value(forHTTPHeaderField: "Content-Type") ?? mime,
-                          "Cache-Control": path.hasPrefix("data/") ? "public, max-age=31536000, immutable" : "no-cache", "Access-Control-Allow-Origin": "*"]
+                          "Cache-Control": path.hasPrefix("data/") && (200..<300).contains(response.statusCode) ? "public, max-age=31536000, immutable" : "no-store", "Access-Control-Allow-Origin": "*"]
             for name in ["Content-Range", "Accept-Ranges", "Set-Cookie"] {
                 if let value = response.value(forHTTPHeaderField: name) { output[name] = value }
             }
             let bytes = self.patch(data ?? Data(), path: path)
             self.respond(connection, status: response.statusCode, headers: output, body: method == "HEAD" ? Data() : bytes,
                          length: method == "HEAD" ? response.expectedContentLength : nil)
+        }
+        connection.stateUpdateHandler = { state in
+            switch state {
+            case .failed, .cancelled: task.cancel()
+            default: break
+            }
         }
     }
 

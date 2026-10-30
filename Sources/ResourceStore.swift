@@ -38,8 +38,9 @@ final class ResourceStore {
         return cache.appendingPathComponent(digest)
     }
 
-    func fetch(_ request: URLRequest, cacheAsset: Bool, completion: @escaping (Data?, HTTPURLResponse?, Error?) -> Void) {
-        session.dataTask(with: request) { [weak self] data, response, error in
+    @discardableResult
+    func fetch(_ request: URLRequest, cacheAsset: Bool, completion: @escaping (Data?, HTTPURLResponse?, Error?) -> Void) -> URLSessionDataTask {
+        let task = session.dataTask(with: request) { [weak self] data, response, error in
             let http = response as? HTTPURLResponse
             if error != nil || (http?.statusCode ?? 200) >= 400 {
                 NetworkDiagnostics.shared.request(request.url, status: http?.statusCode, error: error)
@@ -53,7 +54,9 @@ final class ResourceStore {
                 }
             }
             completion(data, http, error)
-        }.resume()
+        }
+        task.resume()
+        return task
     }
 
     private func trimCache() {
