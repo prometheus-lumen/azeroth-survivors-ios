@@ -74,7 +74,8 @@ final class GameViewController: UIViewController, WKNavigationDelegate, WKUIDele
         server.start { [weak self] ready in
             guard let self = self else { return }
             NetworkDiagnostics.shared.record("LOCAL-SERVER ready=\(ready) port=\(self.server.port)")
-            if ready { self.webView.load(URLRequest(url: URL(string: self.server.origin + "/")!)) }
+            // The game's own option avoids compiling its ~2,000 pipeline variants before mobile startup.
+            if ready { self.webView.load(URLRequest(url: URL(string: self.server.origin + "/?pipe_warm=0")!)) }
             else { self.alert("本地服务未能启动", "请重新打开 App。") }
         }
     }
@@ -124,11 +125,13 @@ final class GameViewController: UIViewController, WKNavigationDelegate, WKUIDele
             if kind == "progress", text == "ready", !validationSnapshotScheduled,
                ProcessInfo.processInfo.environment["AZEROTH_VALIDATE"] == "1" {
                 validationSnapshotScheduled = true
-                DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
-                    self?.webView.takeSnapshot(with: nil) { image, error in
-                        let file = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("ValidationSnapshot.png")
-                        if let data = image?.pngData() { try? data.write(to: file, options: .atomic) }
-                        NetworkDiagnostics.shared.record("VALIDATION snapshot=\(image != nil) error=\(error?.localizedDescription ?? "none")")
+                for delay in [3, 20, 60] {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(delay)) { [weak self] in
+                        self?.webView.takeSnapshot(with: nil) { image, error in
+                            let file = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("ValidationSnapshot-\(delay).png")
+                            if let data = image?.pngData() { try? data.write(to: file, options: .atomic) }
+                            NetworkDiagnostics.shared.record("VALIDATION t=\(delay) snapshot=\(image != nil) error=\(error?.localizedDescription ?? "none")")
+                        }
                     }
                 }
             }

@@ -187,7 +187,12 @@ def populate(args):
         if not isinstance(value.get('names'), list):
             raise SystemExit('Invalid required data manifest: ' + manifest)
         names.update(value['names'])
-    print(f'Boot/world manifests contain {len(names)} unique data files', flush=True)
+    supplement = Path(__file__).with_name('startup-manifest.json')
+    if supplement.exists():
+        value = json.loads(supplement.read_text())
+        if value.get('build') == mirror.build:
+            names.update(value['names'])
+    print(f'Required manifests contain {len(names)} unique data files', flush=True)
     failures = mirror.batch(chain_path(name) for name in names)
     if failures:
         raise SystemExit('Required boot/world data downloads failed: ' + json.dumps(failures, ensure_ascii=False))
@@ -211,7 +216,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('output', nargs='?', type=Path, default=Path('www'))
     parser.add_argument('--budget-mb', type=int, default=600)
-    parser.add_argument('--seconds', type=int, default=600)
+    parser.add_argument('--seconds', type=int, default=1200)
     parser.add_argument('--workers', type=int, default=8)
     args = parser.parse_args()
     destination = args.output.resolve()
