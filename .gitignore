@@ -1,0 +1,16 @@
+www/
+build/
+artifacts/
+*.ipa
+*.xcarchive
+*.xcodeproj/
+*.xcworkspace/
+xcuserdata/
+*.mobileprovision
+*.p12
+*.pem
+.env*
+.DS_Store
+__pycache__/
+azeroth-fetch-*/
+*.sav

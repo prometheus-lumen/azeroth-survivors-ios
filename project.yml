@@ -1,0 +1,43 @@
+name: AzerothSurvivors
+options:
+  deploymentTarget:
+    iOS: '26.0'
+settings:
+  base:
+    SWIFT_VERSION: '5.0'
+    SWIFT_STRICT_CONCURRENCY: minimal
+    PRODUCT_BUNDLE_IDENTIFIER: com.azerothsurvivors.app
+    PRODUCT_NAME: AzerothSurvivors
+    TARGETED_DEVICE_FAMILY: '1,2'
+    CODE_SIGNING_ALLOWED: NO
+    CODE_SIGNING_REQUIRED: NO
+    CODE_SIGN_IDENTITY: ''
+    GENERATE_INFOPLIST_FILE: NO
+    INFOPLIST_KEY_UIApplicationSceneManifest_Generation: NO
+    ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+targets:
+  AzerothSurvivors:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources
+      - path: Assets.xcassets
+        buildPhase: resources
+      - path: www
+        type: folder
+        buildPhase: resources
+    settings:
+      base:
+        INFOPLIST_FILE: Info.plist
+    dependencies:
+      - sdk: UIKit.framework
+      - sdk: WebKit.framework
+      - sdk: Network.framework
+      - sdk: CryptoKit.framework
+schemes:
+  AzerothSurvivors:
+    build:
+      targets:
+        AzerothSurvivors: all
+    archive:
+      config: Release

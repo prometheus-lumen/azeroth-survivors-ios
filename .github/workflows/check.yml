@@ -1,0 +1,18 @@
+name: Check source
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Python scripts
+        run: python3 -m py_compile tools/*.py
+      - name: Typecheck iOS sources
+        run: |
+          IOS_SDK_PATH="$(xcrun --sdk iphoneos --show-sdk-path)"
+          xcrun --sdk iphoneos swiftc -sdk "$IOS_SDK_PATH" -target arm64-apple-ios26.0 -swift-version 5 -parse-as-library -typecheck Sources/*.swift
